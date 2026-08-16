@@ -33,7 +33,9 @@ When a local fix is worth proposing upstream, create a dedicated branch **from `
 
 GitHub disables Actions by default on newly created forks; they must be enabled once from the **Actions** tab before anything runs. The single workflow inherited from upstream then triggers on pushes and pull requests:
 
-- `validate.yaml` — HACS validation (category `plugin`) only; upstream ships no test workflow for the card. The HACS job checks repository metadata (description, topics, issues enabled) that forks do not inherit from upstream, so it may fail here for reasons unrelated to the code.
+- `validate.yaml` — HACS validation (category `plugin`) only; upstream ships no test workflow for the card. The HACS job checks repository metadata (description, topics, issues enabled) that forks do not inherit from upstream.
+
+Policy on this fork: workflow files are deliberately kept identical to upstream (no local edits) so that syncing never conflicts on them. Instead, the repository metadata the HACS job depends on is maintained manually in the repository settings — issues enabled, upstream topics copied — so it stays green.
 
 ## Note on this file
 
