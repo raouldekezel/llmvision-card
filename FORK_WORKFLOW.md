@@ -1,6 +1,6 @@
 # Fork Workflow
 
-This repository is a personal fork of [valentinfrlch/llmvision-card](https://github.com/valentinfrlch/llmvision-card). It exists to carry local fixes and improvements that are not (or not yet) addressed upstream, while staying easy to resynchronize with upstream.
+This repository is a personal fork of [valentinfrlch/llmvision-card](https://github.com/valentinfrlch/llmvision-card). It exists to carry local fixes and improvements that are not (or not yet) addressed upstream, while staying easy to resynchronize with upstream. The companion integration fork is [raouldekezel/ha-llmvision](https://github.com/raouldekezel/ha-llmvision), run under the same workflow.
 
 ## Branch model
 
@@ -13,11 +13,35 @@ Rationale: keeping `main` strictly identical to upstream makes synchronization t
 
 Making `deploy` the repository's default branch is recommended: new pull requests then target it by default (instead of GitHub proposing the upstream repository as base), and HACS — which installs from the default branch when a fork has no releases — picks up the deployed version directly.
 
-## Day-to-day work
+## Development process
 
-1. Create a feature branch from `deploy` (e.g. `fix/timeline-rendering`).
-2. Open a pull request targeting `deploy` **in this fork**. Double-check the base repository and branch when opening the PR: GitHub tends to preselect the upstream repository.
-3. Review and iterate; merge only on the owner's explicit approval ("ok merge").
+The process is the one proven on [NavimowHA](https://github.com/raouldekezel/NavimowHA) and [dolphin-robot](https://github.com/raouldekezel/dolphin-robot).
+
+### Issues
+
+- **Every change starts as an issue**, systematically — bug fix, feature, hardening, chore or investigation alike. Issues carry a typed identifier in the title, numbered per family and local to this repository: `BUG-NN`, `HARD-NN`, `FEAT-NN`, `CHORE-NN`, `SPIKE-NN`.
+- **The issue body is the normative source of truth.** Settled design, root cause, discarded alternatives and arbitrated decisions are folded into the body *in place*, with a dated edit trailer. Comments carry only dated session reports and reviews — never normative additions stacked over an outdated body.
+- **An issue is closed only by the operator, and only after on-site validation** on the live Home Assistant dashboards. A merge never closes an issue. If validation fails or reveals a new pathology, the issue reopens or a new `BUG` is filed.
+
+### Branches, pull requests, merges
+
+- Work branches are named `patches/<id>-<slug>` (e.g. `patches/bug-01-timeline-rendering`) and fork off `deploy`.
+- One pull request per issue, targeting `deploy` **in this fork**. Double-check the base repository and branch when opening the PR: GitHub tends to preselect the upstream repository.
+- Reference issues with `refs #NN` — never `Closes`, since closing is an operator act tied to on-site validation, not to a merge.
+- Review verdicts are posted as PR comments. Merge happens only on the operator's explicit "ok merge".
+- Deployed states are tracked with `raoul.NN` tags; a release bundles one or two issues, validated on site before their issues close.
+
+### Diagnostics
+
+Diag sessions for the LLM Vision pair live in the **integration fork's** `docs/diag/` tree ([raouldekezel/ha-llmvision](https://github.com/raouldekezel/ha-llmvision/tree/deploy/docs/diag)) — card issues reference sessions there rather than duplicating the scaffolding. Card-side evidence (browser console excerpts, rendered-card screenshots with PII reviewed) joins the session directory like any other evidence file.
+
+### Tests
+
+Upstream ships no test suite for the card. The rules below bind from the day tests are introduced:
+
+- **Tests are black-box**: they exercise public behavior and never read internal fields or implementation details.
+- Regression tests are pinned and named after their issue id; pinned assertions are never edited or weakened without an explicit, reviewed justification.
+- A test built on mocked scheduling or mocked rendering must prove that the asserted path actually executed; a green that never ran the path is a defect, not a pass.
 
 ## Syncing with upstream
 
@@ -39,4 +63,4 @@ Policy on this fork: workflow files are deliberately kept identical to upstream 
 
 ## Note on this file
 
-`FORK_WORKFLOW.md` exists only on `deploy` (and branches derived from it), keeping `main` byte-identical to upstream.
+`FORK_WORKFLOW.md` and this process section exist only on `deploy` (and branches derived from it), keeping `main` byte-identical to upstream.
