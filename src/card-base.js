@@ -258,28 +258,28 @@ export class BaseLLMVisionCard extends HTMLElement {
                     </div>
                     <div class="${titleRowClass}">
                         <div class="${prefix}-title-main">
-                            <h2>${event}</h2>
+                            <h2></h2>
                         </div>
                         <div class="${prefix}-title-secondary">
-                            <p class="secondary"><span>${secondaryText}</span></p>
+                            <p class="secondary"><span></span></p>
                         </div>
                         <div class="${prefix}-title-tertiary">
                             <div class="${prefix}-badges-row">
                                 ${shouldShowCategory ? `
                                 <span class="${prefix}-badge">
                                     <ha-icon icon="mdi:label"></ha-icon>
-                                    <span class="text" style="text-transform: capitalize;">${category}</span>
+                                    <span class="text ${prefix}-cat-text" style="text-transform: capitalize;"></span>
                                 </span>` : ''}
                                 ${label ? `
                                 <span class="${prefix}-badge">
-                                    <ha-icon icon="${icon || 'mdi:tag-outline'}"></ha-icon>
-                                    <span class="text" style="text-transform: capitalize;">${label}</span>
+                                    <ha-icon class="${prefix}-label-icon"></ha-icon>
+                                    <span class="text ${prefix}-label-text" style="text-transform: capitalize;"></span>
                                 </span>` : ''}
                             </div>
                         </div>
                     </div>
-                    <img src="${keyFrame}" alt="Event Snapshot" onerror="this.style.display='none'">
-                    <p class="summary">${summary}</p>
+                    <img src="" alt="Event Snapshot" onerror="this.style.display='none'">
+                    <p class="summary"></p>
                 </div>
             `;
 
@@ -495,6 +495,18 @@ export class BaseLLMVisionCard extends HTMLElement {
                     }
                 </style>
             `;
+
+        // Fill event-derived data as inert text/attributes; never interpreted as HTML.
+        wrapper.querySelector(`.${prefix}-title-main h2`).textContent = event;
+        wrapper.querySelector(`.${prefix}-title-secondary .secondary span`).textContent = secondaryText;
+        const catTextEl = wrapper.querySelector(`.${prefix}-cat-text`);
+        if (catTextEl) catTextEl.textContent = category;
+        const labelTextEl = wrapper.querySelector(`.${prefix}-label-text`);
+        if (labelTextEl) labelTextEl.textContent = label;
+        const labelIconEl = wrapper.querySelector(`.${prefix}-label-icon`);
+        if (labelIconEl) labelIconEl.setAttribute('icon', icon || 'mdi:tag-outline');
+        wrapper.querySelector(`.${contentClass} img`).src = keyFrame;
+        wrapper.querySelector(`.${contentClass} .summary`).textContent = summary;
 
         if (!history.state || !history.state.popupOpen) {
             history.pushState({ popupOpen: true }, '');

@@ -226,24 +226,26 @@ export class LLMVisionPreviewCard extends BaseLLMVisionCard {
         container.classList.add('preview-event-container');
         const result = getIcon(event.category, event.label);
         let { icon, color: defaultColor } = result;
-        console.log("icon result", result, event.title);
         if ((event.category === undefined || event.category === '') && this.default_icon) {
             icon = this.default_icon;
         }
-        console.log("icon", icon, event.title, result);
         let cameraName = event.cameraName;
         const dateObj = new Date(event.startTime);
         const dateLabel = this.formatDateLabel(dateObj);
         const timeStr = this.formatTime(dateObj);
+        // Static skeleton only; event-derived data is set as inert text/attributes below.
         container.innerHTML = `
                 <img class="preview-event-image" src="" alt="Key frame" onerror="this.style.display='none'">
                 <div class="preview-event-vignette"></div>
                 <div class="preview-icon-container">
-                    <ha-icon icon="${icon}" style="color:white;font-size:24px;"></ha-icon>
+                    <ha-icon style="color:white;font-size:24px;"></ha-icon>
                 </div>
-                <div class="preview-event-details">${cameraName} • ${dateLabel}, ${timeStr}</div>
-                <div class="preview-event-title">${event.title}</div>
+                <div class="preview-event-details"></div>
+                <div class="preview-event-title"></div>
             `;
+        container.querySelector('.preview-icon-container ha-icon').setAttribute('icon', icon);
+        container.querySelector('.preview-event-details').textContent = `${cameraName} • ${dateLabel}, ${timeStr}`;
+        container.querySelector('.preview-event-title').textContent = event.title;
         container.addEventListener('click', () => {
             this.resolveKeyFrame(hass, event.keyFrame).then(url => {
                 this.showPopup({

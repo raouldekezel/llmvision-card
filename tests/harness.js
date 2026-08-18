@@ -60,6 +60,26 @@ export function fakeHass(events = [], { states, resolvedUrl = '/resolved/key-fra
     };
 }
 
+// The horizontal card does not use callApi: it reads events from the calendar
+// entity's own attributes (parallel arrays). This builds a hass exposing that shape.
+// `items`: [{ title, summary, keyFrame, camera, start }]
+export function horizontalHass(items = [], { entity = 'calendar.llm_vision_timeline', states = {} } = {}) {
+    return {
+        states: {
+            [entity]: {
+                attributes: {
+                    events: items.map((e) => e.title),
+                    summaries: items.map((e) => e.summary ?? ''),
+                    key_frames: items.map((e) => e.keyFrame ?? ''),
+                    camera_names: items.map((e) => e.camera ?? ''),
+                    starts: items.map((e) => e.start ?? '2026-08-18T11:03:00'),
+                },
+            },
+            ...states,
+        },
+    };
+}
+
 // The render path is asynchronous: the `hass` setter starts fetchEvents() -> render()
 // without returning the promise, so tests cannot await it directly. Let the queued
 // microtasks and one macrotask turn settle before asserting on the DOM.
