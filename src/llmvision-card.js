@@ -299,16 +299,20 @@ class LLMVisionCard extends BaseLLMVisionCard {
             const colorsComputed = this.computeColors(d.category, defaultColor);
             const container = document.createElement('div');
             container.classList.add('event-container');
+            // Static skeleton only; event-derived data is set as inert text/attributes below.
             container.innerHTML = `
                 <div class="icon-container" style="background-color:${colorsComputed.bgColorRgba};">
-                    <ha-icon icon="${icon}" style="color:${colorsComputed.iconColorRgba};"></ha-icon>
+                    <ha-icon style="color:${colorsComputed.iconColorRgba};"></ha-icon>
                 </div>
                 <div class="event-details">
-                    <h3>${d.title}</h3>
-                    <p>${d.cameraName ? `${timeStr} • ${d.cameraName}` : timeStr}</p>
+                    <h3></h3>
+                    <p></p>
                 </div>
                 <img alt="Key frame ${idx + 1}" style="display:none;" onerror="this.style.display='none'">
             `;
+            container.querySelector('.icon-container ha-icon').setAttribute('icon', icon);
+            container.querySelector('.event-details h3').textContent = d.title;
+            container.querySelector('.event-details p').textContent = d.cameraName ? `${timeStr} • ${d.cameraName}` : timeStr;
             const imgEl = container.querySelector('img');
             container.addEventListener('click', () => {
                 this.resolveKeyFrame(hass, d.keyFrame).then(url => {

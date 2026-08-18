@@ -664,16 +664,17 @@ export class LLMVisionHorizontalCard extends HTMLElement {
         const minutes = date.getMinutes().toString().padStart(2, '0');
         const formattedTime = `${formattedDate}, ${hours}:${minutes}`;
         const secondaryText = cameraName ? `${formattedTime} • ${cameraName}` : formattedTime;
+        // Static skeleton only; event-derived data is set as inert text/attributes below.
         const eventDetails = `
             <div>
                 <div class="title-container">
-                    <ha-icon icon="${icon}"></ha-icon>
-                    <h2>${event}</h2>
+                    <ha-icon class="hz-event-icon"></ha-icon>
+                    <h2></h2>
                      <button class="close-popup" style="font-size:30"><ha-icon icon="mdi:close"></ha-icon></button>
                 </div>
-                <img src="${keyFrame}" alt="Event Snapshot" onerror="this.style.display='none'">
-                <p class="secondary"><span>${secondaryText}</span></p>
-                <p class="summary">${summary}</p>
+                <img src="" alt="Event Snapshot" onerror="this.style.display='none'">
+                <p class="secondary"><span></span></p>
+                <p class="summary"></p>
             </div>
         `;
 
@@ -769,6 +770,13 @@ export class LLMVisionHorizontalCard extends HTMLElement {
                 }
             </style>
         `;
+
+        // Fill event-derived data as inert text/attributes; never interpreted as HTML.
+        popup.querySelector('.hz-event-icon').setAttribute('icon', icon || '');
+        popup.querySelector('.title-container h2').textContent = event;
+        popup.querySelector('.popup-content img').src = keyFrame;
+        popup.querySelector('.secondary span').textContent = secondaryText;
+        popup.querySelector('.summary').textContent = summary;
 
         // Push a new history state
         if (!history.state || !history.state.popupOpen) {
