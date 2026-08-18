@@ -87,12 +87,13 @@ describe('HARD-01 — event data renders as inert text at every site', () => {
     });
 
     it('preview tile: a crafted title is literal text, no injected element', async () => {
-        const el = previewCard();
         // nominal first proves the render path runs...
-        el.hass = fakeHass([cannedEvent({ title: NOMINAL })]);
+        const nominal = previewCard();
+        nominal.hass = fakeHass([cannedEvent({ title: NOMINAL })]);
         await flush();
-        expect(el.querySelector('.preview-event-title').textContent).toBe(NOMINAL);
-        // ...then the crafted title stays inert
+        expect(nominal.querySelector('.preview-event-title').textContent).toBe(NOMINAL);
+        // ...then a fresh instance (its own fetch window, no throttle collision) stays inert
+        const el = previewCard();
         el.hass = fakeHass([cannedEvent({ title: XSS_TITLE })]);
         await flush();
         expect(el.querySelector('.preview-event-title').textContent).toBe(XSS_TITLE);
