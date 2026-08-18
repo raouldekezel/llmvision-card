@@ -16,6 +16,7 @@ function __logLLMVisionBadge(context) {
 export class BaseLLMVisionCard extends HTMLElement {
     imageCache = new Map();
     _lastEventHash = null;
+    _lastFetchTs = null;
 
     connectedCallback() {
         if (!this._badgeLogged) {
@@ -36,6 +37,7 @@ export class BaseLLMVisionCard extends HTMLElement {
         this.default_color = config.default_color || '#929292';
         this.time_format = config.time_format || '24h';
         this.filter_false_positives = config.filter_false_positives !== false;
+        this.refresh_interval = Math.max(5, Number(config.refresh_interval) || 30);
         if (requireEventLimits) {
             if (!this.number_of_events && !this.number_of_days) {
                 throw new Error('Either number_of_events or number_of_days needs to be set.');
@@ -54,6 +56,13 @@ export class BaseLLMVisionCard extends HTMLElement {
         categories = [],
         includeNoActivity = false
     } = {}) {
+        // Throttle: at most one request per refresh window per card instance. A tick
+        // inside the window keeps the current DOM (callers treat null as "no change").
+        const windowMs = (this.refresh_interval || 30) * 1000;
+        if (this._lastFetchTs && Date.now() - this._lastFetchTs < windowMs) {
+            return null;
+        }
+        this._lastFetchTs = Date.now();
         try {
             const params = new URLSearchParams();
             if (limit) params.set('limit', limit);
