@@ -1,10 +1,10 @@
-import { translate, hexToRgba } from './helpers.js?v=1.7.0';
+import { VERSION } from "./version.js";
+import { translate, hexToRgba } from './helpers.js';
 
-const __LLMVISION_VERSION = 'v1.7.0 beta 3';
 function __logLLMVisionBadge(context) {
     if (!window.__LLMVISION_BADGE_LOGGED) {
         console.log(
-            '%cLLM Vision Card%c%c' + __LLMVISION_VERSION,
+            `%cLLM Vision Card%c v${VERSION}`,
             'background:#0071FF;color:#fff;padding:2px 6px 2px 8px;border-radius:4px 0 0 4px;font-weight:600;',
             'background:#0058c7;color:#fff;padding:2px 4px;font-weight:500;',
             'background:#0058c7;color:#fff;padding:2px 8px 2px 6px;border-radius:0 4px 4px 0;font-weight:600;'
@@ -16,7 +16,9 @@ function __logLLMVisionBadge(context) {
 export class BaseLLMVisionCard extends HTMLElement {
     imageCache = new Map();
     _lastEventHash = null;
-    _lastFetchTs = null;
+    _lastFetch = 0;
+    _fetchPromise = null;
+    _cachedEvents = null;
 
     connectedCallback() {
         if (!this._badgeLogged) {
@@ -37,7 +39,7 @@ export class BaseLLMVisionCard extends HTMLElement {
         this.default_color = config.default_color || '#929292';
         this.time_format = config.time_format || '24h';
         this.filter_false_positives = config.filter_false_positives !== false;
-        this.refresh_interval = Math.max(5, Number(config.refresh_interval) || 30);
+        this.refresh_interval = Math.max(1, Number(config.refresh_interval || 15));
         if (requireEventLimits) {
             if (!this.number_of_events && !this.number_of_days) {
                 throw new Error('Either number_of_events or number_of_days needs to be set.');
@@ -56,13 +58,29 @@ export class BaseLLMVisionCard extends HTMLElement {
         categories = [],
         includeNoActivity = false
     } = {}) {
-        // Throttle: at most one request per refresh window per card instance. A tick
-        // inside the window keeps the current DOM (callers treat null as "no change").
-        const windowMs = (this.refresh_interval || 30) * 1000;
-        if (this._lastFetchTs && Date.now() - this._lastFetchTs < windowMs) {
-            return null;
+        const now = Date.now();
+        const refreshMs = (this.refresh_interval || 15) * 1000;
+        if (this._fetchPromise) return this._fetchPromise;
+        if (this._cachedEvents && now - this._lastFetch < refreshMs) return this._cachedEvents;
+
+        this._lastFetch = now;
+        this._fetchPromise = this._fetchEvents(hass, { limit, days, hours, cameras, categories, includeNoActivity });
+        try {
+            this._cachedEvents = await this._fetchPromise;
+            return this._cachedEvents;
+        } finally {
+            this._fetchPromise = null;
         }
-        this._lastFetchTs = Date.now();
+    }
+
+    async _fetchEvents(hass, {
+        limit = 10,
+        days = null,
+        hours = null,
+        cameras = [],
+        categories = [],
+        includeNoActivity = false
+    } = {}) {
         try {
             const params = new URLSearchParams();
             if (limit) params.set('limit', limit);

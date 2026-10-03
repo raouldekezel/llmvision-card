@@ -27,8 +27,10 @@ beforeEach(() => {
 });
 afterEach(() => { vi.restoreAllMocks(); });
 
+// Semantics are upstream's (llmvision-card v1.7.2): default window 15 s, floor 1 s,
+// in-flight requests shared, cached events served inside the window.
 describe('HARD-02 — timeline fetch throttled to a per-instance window', () => {
-    it('first hass update fetches once and renders (default 30 s window)', async () => {
+    it('first hass update fetches once and renders', async () => {
         const el = timelineCard();
         const hass = spyHass([cannedEvent({ title: 'Person at the door' })]);
         el.hass = hass;
@@ -51,8 +53,7 @@ describe('HARD-02 — timeline fetch throttled to a per-instance window', () => 
 
     it('a tick during an in-flight request does not start a second one', async () => {
         // callApi stays pending, so the first request is still in flight during the
-        // next ticks — this locks that _lastFetchTs is stamped BEFORE the await, not
-        // after it (move it after and this fails with 3 calls).
+        // next ticks: they must share it instead of starting their own.
         const el = timelineCard();
         let resolveFetch;
         const hass = { ...fakeHass([]), callApi: vi.fn(() => new Promise((r) => { resolveFetch = r; })) };
@@ -65,13 +66,17 @@ describe('HARD-02 — timeline fetch throttled to a per-instance window', () => 
         expect(el.querySelector('.event-container h3').textContent).toBe('Person at the front door');
     });
 
-    it('a hass update past the window fetches again', async () => {
+    it('the default window is 15 s; a hass update past it fetches again', async () => {
         const el = timelineCard();
         const hass = spyHass([cannedEvent()]);
         el.hass = hass;
         await flush();
         expect(hass.callApi).toHaveBeenCalledTimes(1);
-        advance(30_000);
+        advance(14_999);   // inside 15 s
+        el.hass = hass;
+        await flush();
+        expect(hass.callApi).toHaveBeenCalledTimes(1);
+        advance(1);        // now at 15 s
         el.hass = hass;
         await flush();
         // a throttle stuck closed would still read 1 here
@@ -94,17 +99,17 @@ describe('HARD-02 — timeline fetch throttled to a per-instance window', () => 
         expect(hass.callApi).toHaveBeenCalledTimes(2);
     });
 
-    it('refresh_interval below the floor (1) behaves as 5 s', async () => {
-        const el = timelineCard({ refresh_interval: 1 });
+    it('refresh_interval below the floor (0.2) behaves as 1 s', async () => {
+        const el = timelineCard({ refresh_interval: 0.2 });
         const hass = spyHass([cannedEvent()]);
         el.hass = hass;
         await flush();
         expect(hass.callApi).toHaveBeenCalledTimes(1);
-        advance(4_000);   // 1 s configured, but floor is 5 s -> still gated
+        advance(999);     // 0.2 s configured, but floor is 1 s -> still gated
         el.hass = hass;
         await flush();
         expect(hass.callApi).toHaveBeenCalledTimes(1);
-        advance(1_000);   // 5 s
+        advance(1);       // 1 s
         el.hass = hass;
         await flush();
         expect(hass.callApi).toHaveBeenCalledTimes(2);
