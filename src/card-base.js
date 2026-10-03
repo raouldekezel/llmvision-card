@@ -61,7 +61,9 @@ export class BaseLLMVisionCard extends HTMLElement {
         const now = Date.now();
         const refreshMs = (this.refresh_interval || 15) * 1000;
         if (this._fetchPromise) return this._fetchPromise;
-        if (this._cachedEvents && now - this._lastFetch < refreshMs) return this._cachedEvents;
+        // The window applies to failed fetches too (cache is null): callers keep the
+        // current DOM, and a failing API is not retried on every hass update.
+        if (now - this._lastFetch < refreshMs) return this._cachedEvents;
 
         this._lastFetch = now;
         this._fetchPromise = this._fetchEvents(hass, { limit, days, hours, cameras, categories, includeNoActivity });

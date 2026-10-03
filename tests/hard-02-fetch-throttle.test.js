@@ -115,6 +115,44 @@ describe('HARD-02 — timeline fetch throttled to a per-instance window', () => 
         expect(hass.callApi).toHaveBeenCalledTimes(2);
     });
 
+    it('a failing events API is throttled too', async () => {
+        // A rejected request (401, http.ban, HA restarting) still consumes the window;
+        // retrying on every hass update is the request storm the throttle exists for.
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        const el = timelineCard();
+        const hass = { ...fakeHass([]), callApi: vi.fn(() => Promise.reject(new Error('401: Unauthorized'))) };
+        for (let i = 0; i < 10; i++) {
+            el.hass = hass;
+            await flush();
+        }
+        expect(hass.callApi).toHaveBeenCalledTimes(1);
+        advance(15_000);
+        el.hass = hass;
+        await flush();
+        // anti-hollow-green: the failing path really ran twice, once per window
+        expect(hass.callApi).toHaveBeenCalledTimes(2);
+        expect(console.error).toHaveBeenCalledTimes(2);
+    });
+
+    it('a failure after a success keeps the rendered events and stays throttled', async () => {
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        const el = timelineCard();
+        let failing = false;
+        const base = fakeHass([cannedEvent({ title: 'Person at the door' })]);
+        const hass = { ...base, callApi: vi.fn((...a) => (failing ? Promise.reject(new Error('500')) : base.callApi(...a))) };
+        el.hass = hass;
+        await flush();
+        expect(el.querySelector('.event-container h3').textContent).toBe('Person at the door');
+        failing = true;
+        advance(15_000);
+        for (let i = 0; i < 10; i++) {
+            el.hass = hass;
+            await flush();
+        }
+        expect(hass.callApi).toHaveBeenCalledTimes(2);
+        expect(el.querySelector('.event-container h3').textContent).toBe('Person at the door');
+    });
+
     it('the gate is per instance: two cards each fetch once inside the window', async () => {
         const a = timelineCard();
         const b = timelineCard();
